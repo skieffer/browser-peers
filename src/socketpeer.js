@@ -16,11 +16,27 @@ import { xhr } from "./util";
  * to join what we call the "window group", i.e. the set of browser tabs that are
  * able to communicate with one another. You should be prepared to catch an error if
  * the XHR involved in the join call should fail for any reason.
+ *
+ * Listenable events:
+ *   newWindow:
+ *      Fired when a new window is added to the group. {
+ *          target: this SocketPeer,
+ *          windowGroupId: the group id of the window group. This is persistent throughout
+ *              a browser session,
+ *          sid: the sid of the new window
+ *      }
+ *   updateMapping:
+ *      Fired when the window mapping has been updated. {
+ *          target: this SocketPeer,
+ *          mapping: the new mapping, represented as an object of key-value pairs
+ *      }
+ *   windowDiscon:
+ *      Fired when a window has disconnected from the group. {
+ *          target: this SocketPeer,
+ *          sid: the sid of the window that disconnected
+ *      }
  */
 export class SocketPeer extends Peer {
-
-    // FIXME: Do we want the constructor to maybe take the namespace, instead of
-    //  an existing socket object?
 
     /*
      * @param socket {Socket} A Socket instance as returned by a call to `io(namespace)`,
@@ -142,7 +158,12 @@ export class SocketPeer extends Peer {
     }
 
     addNewWindowToGroup(msg) {
-        console.log('addNewWindowToGroup socket event received', msg);
+        //console.log('addNewWindowToGroup socket event received', msg);
+        const event = this.copyMessage(msg);
+        event.type = 'newWindow';
+        event.target = this;
+        this.dispatch(event);
+
         const windowGroupId = msg.windowGroupId;
         const newSid = msg.sid;
         if (newSid === this.sid) {
@@ -171,13 +192,28 @@ export class SocketPeer extends Peer {
             this.adoptNumberFromMapping();
         }
         console.log('after updateWindowGroupMapping', this);
+
+        const mapping = this.copyMessage(msg);
+        const event = {
+            type: 'updateMapping',
+            target: this,
+            mapping: mapping,
+        }
+        this.dispatch(event);
     }
 
     windowDisconnected(msg) {
-        console.log('windowDisconnected', msg);
+        //console.log('windowDisconnected', msg);
+
         const lostSid = msg.sid;
         // First remove the lost sid from the mapping.
         this.removeSidFromWindowMapping(lostSid);
+
+        const event = this.copyMessage(msg);
+        event.type = 'windowDiscon';
+        event.target = this;
+        this.dispatch(event);
+
         // Now if, after removal, we are the leader, do what needs doing.
         // This means that in the special case where the former leader was
         // the window that closed, the next in line will take over here.
