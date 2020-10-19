@@ -34,6 +34,37 @@ export class Peer {
         for (let [name, handler] of this.defaultHandlers) {
             this._addHandler(name, handler);
         }
+
+        this.listeners = {};
+    }
+
+    // ------------------------------------------------------------------------
+    // Events
+
+    on(eventType, callback) {
+        const cbs = this.listeners[eventType] || [];
+        cbs.push(callback);
+        this.listeners[eventType] = cbs;
+    }
+
+    off(eventType, callback) {
+        const cbs = this.listeners[eventType] || [];
+        const i0 = cbs.indexOf(callback);
+        if (i0 >= 0) {
+            cbs.splice(i0, 1);
+            this.listeners[eventType] = cbs;
+        }
+    }
+
+    dispatch(event) {
+        const cbs = this.listeners[event.type] || [];
+        for (let cb of cbs) {
+            cb(event);
+        }
+    }
+
+    copyMessage(msg) {
+        return JSON.parse(JSON.stringify(msg));
     }
 
     // ------------------------------------------------------------------------
