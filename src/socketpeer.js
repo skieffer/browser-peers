@@ -26,14 +26,13 @@ export class SocketPeer extends Peer {
      * @param socket {Socket} A Socket instance as returned by a call to `io(namespace)`,
      *   using the Socket.IO client library.
      * @param options {
-     *   namespace: ...
      *   joinHttpRoute {string} the URL under which your server has published the HTTP route
      *     to which this class needs to submit its SID in order to join the window group.
      *     See `example/app.py` in this repo.
      *   eventName: object in which you may specify alternative names for the socket events
      *     that make up the protocol employed by this class in order to maintain its connections
-     *     to its peers. Since you can already choose the namespace, you probably don't need
-     *     to change any of these event names, but you may do so if you wish.
+     *     to its peers. Since you can already chose the namespace when you formed the socket,
+     *     you probably don't need to change any of these event names, but you may if you wish.
      * }
      */
     constructor(socket, options) {
@@ -65,23 +64,18 @@ export class SocketPeer extends Peer {
         });
 
         const {
-            namespace = '/socketPeers',
             joinHttpRoute = '/joinSessionWindowGroup',
             eventName = {},
         } = options || {};
-        this.namespace = namespace;
         this.joinHttpRoute = joinHttpRoute;
         this.eventName = {
-            success: eventName.success || 'success',
-            error:   eventName.error || 'error',
             disconnectRequest: eventName.disconnectRequest || 'disconnectRequest',
             publishWindowGroupMapping: eventName.publishWindowGroupMapping || 'publishWindowGroupMapping',
             addNewWindowToGroup: eventName.addNewWindowToGroup || 'addNewWindowToGroup',
             updateWindowGroupMapping: eventName.updateWindowGroupMapping || 'updateWindowGroupMapping',
             windowDisconnected: eventName.windowDisconnected || 'windowDisconnected',
-            handleWindowRequest: eventName.handleWindowRequest || 'handleWindowRequest',
-            makeWindowRequest: eventName.makeWindowRequest || 'makeWindowRequest',
-            respondToWindowRequest: eventName.respondToWindowRequest || 'respondToWindowRequest',
+            handleWindowMessage: eventName.handleWindowMessage || 'handleWindowMessage',
+            postWindowMessage: eventName.postWindowMessage || 'postWindowMessage',
         };
 
         this.windowGroupId = null;
@@ -144,7 +138,7 @@ export class SocketPeer extends Peer {
         this.socket.on(this.eventName.addNewWindowToGroup, this.addNewWindowToGroup.bind(this));
         this.socket.on(this.eventName.updateWindowGroupMapping, this.updateWindowGroupMapping.bind(this));
         this.socket.on(this.eventName.windowDisconnected, this.windowDisconnected.bind(this));
-        this.socket.on(this.eventName.handleWindowRequest, this.handleWindowRequest.bind(this));
+        this.socket.on(this.eventName.handleWindowMessage, this.handleWindowMessage.bind(this));
     }
 
     addNewWindowToGroup(msg) {
@@ -192,28 +186,8 @@ export class SocketPeer extends Peer {
         }
     }
 
-    // FIXME: this should be somehow using the abstract base class
-    /* msg format: {
-     *   seqNum {int},
-     *   dstWindowSid {string},
-     *   srcWindowSid {string},
-     *   handlerDescrip {string},
-     *   payload {any}
-     * }
-     */
-    handleWindowRequest(msg) {
-        const handler = this.lookupHandler(msg.handlerDescrip);
-        if (!handler) {
-            msg.rejection_reason = `Unknown handler: ${msg.handlerDescrip}`;
-            this.emit('respondToWindowRequest', msg);
-        }
-        Promise.resolve(handler(msg.payload)).then(result => {
-            msg.result = result;
-            this.emit('respondToWindowRequest', msg);
-        }).catch(reason => {
-            msg.rejection_reason = reason;
-            this.emit('respondToWindowRequest', msg);
-        });
+    handleWindowMessage(wrapper) {
+        super.handleMessage(wrapper);
     }
 
     // -----------------------------------------------------------------------
@@ -277,6 +251,11 @@ export class SocketPeer extends Peer {
         throw new Error(`Could not find sid ${this.sid} in window mapping`);
     }
 
+    postMessageAsPeer(peerName, wrapper) {
+        wrapper.room = peerName;
+        this.socket.emit(this.eventName.postWindowMessage, wrapper);
+    }
+
     // ------------------------------------------------------------------------
     // API
 
@@ -296,28 +275,14 @@ export class SocketPeer extends Peer {
         return Array.from(this.windowMapping.keys()).sort();
     }
 
-    // FIXME: should be somehow using the abstract base class
-    /* Send a request to another window, and receive a promise that resolves
-     * with the response from that window.
-     *
-     * @param windowNumber {int} the number of the window you want to contact.
-     * @param handlerDescrip {string} description of the desired request handler
-     *   to be invoked on the other side.
-     * @param payload {obj} the message you want to send to that window,
-     *   representing your request.
-     * @return: promise that resolves with the other window's response, or else
-     *   rejects with an error.
+    /* Wraps base class's `makeRequest` method, allowing user to pass the window
+     * number instead of the window's SID (since we use the latter internally as peerName).
      */
-    makeWindowRequest(windowNumber, handlerDescrip, payload) {
-        const dstWindowSid = this.windowMapping.get(windowNumber);
-        if (typeof dstWindowSid === 'undefined') {
+    makeWindowRequest(windowNumber, handlerDescrip, args, options) {
+        const peerName = this.windowMapping.get(windowNumber);
+        if (typeof peerName === 'undefined') {
             throw new Error(`Unknown window number: ${windowNumber}`);
         }
-        const wrapper = {
-            dstWindowSid: dstWindowSid,
-            handlerDescrip: handlerDescrip,
-            payload: payload,
-        };
-        return this.emitRequest('makeWindowRequest', wrapper);
+        return this.makeRequest(peerName, handlerDescrip, args, options);
     }
 }
