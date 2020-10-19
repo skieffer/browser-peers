@@ -2,6 +2,14 @@
 /* SPDX-License-Identifier: MIT */
 
 
+/* This is the abstract base class for all of our peer classes.
+ * It implements everything to do with making and handling requests and responses.
+ *
+ * Subclasses are responsible for establishing connections between peers,
+ * and for implementing the abstract `postMessageAsPeer` method defined by this
+ * base class.
+ *
+ */
 export class Peer {
 
     /*
@@ -91,7 +99,7 @@ export class Peer {
             seqNum: seqNum,
             result: result,
         };
-        this.postMessage(peerName, wrapper);
+        this.postMessageAsPeer(peerName, wrapper);
     }
 
     /*
@@ -106,7 +114,7 @@ export class Peer {
             seqNum: seqNum,
             rejection_reason: reason.message,
         };
-        this.postMessage(peerName, wrapper);
+        this.postMessageAsPeer(peerName, wrapper);
     }
 
     consumeRequestData(seqNum) {
@@ -306,7 +314,7 @@ export class Peer {
                     reject: reject,
                     timeoutHandle: timeoutHandle,
                 });
-                this.postMessage(peerName, wrapper);
+                this.postMessageAsPeer(peerName, wrapper);
             });
         });
     }
@@ -379,9 +387,11 @@ export class Peer {
      * _not_ be overridden, but should be inherited from this base class).
      *
      * @param peerName {string} the name of a connected peer
-     * @param wrapper {obj} the wrapper message to be posted to that peer
+     * @param wrapper {obj} the wrapper message to be posted to that peer. Format: {
+     *   type {string} equal to either 'request' or 'response', appropriately.
+     * }
      */
-    postMessage(peerName, wrapper) {
+    postMessageAsPeer(peerName, wrapper) {
         //
     }
 
