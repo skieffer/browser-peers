@@ -251,7 +251,7 @@ export class Peer {
      *      server.addHandler('foo', myInstance)
      * 'foo.doSomething' is a valid description.
      *
-     * @param descrip: the description of the handler.
+     * @param descrip {string} the description of the handler.
      * @return: the handler. If the description was dotted, then the returned handler function
      *   has the previous object in the chain bound as `this`.
      * @throws: Error if the description does not resolve to anything, or if it does but that
