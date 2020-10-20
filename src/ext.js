@@ -96,6 +96,15 @@ export class ExtensionClient extends BasicSignalling {
     // --------------------------------------------------------------------
     // API
 
+    /* It is expected that there will be just a unique ExtensionServer instance for this
+     * client to connect to, and that is the one that was named in this ExtensionClient's
+     * constructor. Therefore as a convenience we automatically pass the server's name
+     * as the `peerName` to the base class's `makeRequest` method.
+     */
+    makeRequest(handlerDescrip, args, options) {
+        return super.makeRequest(this.serverName, handlerDescrip, args, options);
+    }
+
     /*
      * Unlike the `apparentExtensionVersion()` method, which is faulty and only checks for a posted
      * version number (but returns immediately), this method performs an actually robust check for
@@ -126,7 +135,7 @@ export class ExtensionClient extends BasicSignalling {
         // Timeout must be positive, since 0 signals "wait forever".
         timeout = Math.max(timeout, 1);
         const client = this;
-        return this.makeRequest(this.serverName, 'checkVers', {}, { timeout: timeout })
+        return this.makeRequest('checkVers', {}, { timeout: timeout })
             .catch(reason => {
                 if (selfRepairing && (reason instanceof ExtensionUnavailableError)) {
                     client.eraseExtensionPresence();
