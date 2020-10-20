@@ -1,6 +1,7 @@
 /*! browser-peers v0.1.0 | Copyright (c) 2020-2021 Steve Kieffer | MIT license */
 /* SPDX-License-Identifier: MIT */
 
+import { reconstituteError } from "./errors";
 
 /* This is the abstract base class for all of our peer classes.
  * It implements everything to do with making and handling requests and responses.
@@ -21,6 +22,8 @@ export class Peer {
         this.handlers = new Map();
         this.nextSeqNum = 0;
         this.requestsBySeqNum = new Map();
+
+        this.reconstituteErrors = false;
 
         this.readyResolve = null;
         const self = this;
@@ -173,11 +176,10 @@ export class Peer {
             return;
         }
         if (wrapper.rejection_reason) {
-            /* Note: we deliberately do _not_ use `reconstituteError` here; it may be too early. Theoretically,
-             * reconstitution should be done just before consumption. But here we don't know if the error is about
-             * to be consumed. It might need to be serialized and passed on again, in which case it would get
-             * downgraded again to a normal `Error`. */
-            const e = new Error(wrapper.rejection_reason);
+            let e = new Error(wrapper.rejection_reason);
+            if (this.reconstituteErrors) {
+                e = reconstituteError(e);
+            }
             data.reject(e);
         } else {
             data.resolve(wrapper.result);
