@@ -117,6 +117,7 @@ export class Peer {
         Promise.resolve(handler(args)).then(result => {
             this.returnResponse(peerName, seqNum, result);
         }).catch(reason => {
+            reason = this.checkHandlingError(reason, wrapper);
             this.returnRejection(peerName, seqNum, reason);
         });
     }
@@ -406,6 +407,17 @@ export class Peer {
      */
     getAllPeerNames() {
         return [];
+    }
+
+    /* This gives a chance to examine and modify a handler error, and possibly
+     * have side effects, before the error is returned.
+     *
+     * @param reason: Error thrown by request handler.
+     * @param wrapper: the wrapper message that was being handled.
+     * @return: Error instance. May be the same as the given reason, or different.
+     */
+    checkHandlingError(reason, wrapper) {
+        return reason;
     }
 
     // ------------------------------------------------------------------------
