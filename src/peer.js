@@ -31,10 +31,10 @@ export class Peer {
             self.readyResolve = resolve;
         });
 
-        this.defaultHandlers = new Map()
+        this.builtInHandlers = new Map()
             .set('ready', this.ready.bind(this))
         ;
-        for (let [name, handler] of this.defaultHandlers) {
+        for (let [name, handler] of this.builtInHandlers) {
             this._addHandler(name, handler);
         }
 
@@ -200,7 +200,7 @@ export class Peer {
         this.readyResolve();
     }
 
-    /* This is our default handler for the 'ready' handler description.
+    /* This is our built-in handler for the 'ready' handler description.
      *
      * It returns a promise that other peers can use to wait until this peer is ready
      * to accept connections.
@@ -221,12 +221,12 @@ export class Peer {
     /* Add a handler function or handler object.
      * Handlers may return a value synchronously, or may return a Promise. Either is acceptable.
      * You may not register a handler under a reserved name, i.e. the names of any of our
-     * default handlers. These are defined in the constructor.
+     * built-in handlers. These are defined in the constructor.
      *
      * @return: this instance, to support chaining.
      */
     addHandler(name, handler) {
-        if (this.defaultHandlers.has(name)) {
+        if (this.builtInHandlers.has(name)) {
             throw new Error(`Cannot register handler under reserved name: ${name}`);
         }
         this._addHandler(name, handler);
@@ -235,6 +235,18 @@ export class Peer {
 
     _addHandler(name, handler) {
         this.handlers.set(name, handler);
+    }
+
+    /* Add a "built-in handler," which really means a handler such that an error
+     * will be thrown if anyone tries to add a handler by the same name using the
+     * usual `addHandler` method.
+     *
+     * If the language supported it, we would make this a protected method, i.e.
+     * usable only by subclasses. So don't use it unless you should!
+     */
+    _addBuiltInHandler(name, handler) {
+        this.builtInHandlers.set(name, handler);
+        this._addHandler(name, handler);
     }
 
     /* Look up a handler, by its description.
