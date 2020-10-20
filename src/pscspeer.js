@@ -19,7 +19,16 @@ export class PsCsPeer extends Peer {
     constructor(name, ext_name) {
         super(name);
         this.ext_name = ext_name;
-        window.addEventListener('message', this.handleMessageEvent.bind(this));
+        this.boundMessageHandler = this.handleMessageEvent.bind(this);
+        this.activateMessaging();
+    }
+
+    activateMessaging() {
+        window.addEventListener("message", this.boundMessageHandler);
+    }
+
+    deactivateMessaging() {
+        window.removeEventListener("message", this.boundMessageHandler);
     }
 
     handleMessageEvent(event) {
