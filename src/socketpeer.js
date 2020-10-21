@@ -137,7 +137,7 @@ export class SocketPeer extends Peer {
      */
     join() {
         this.getSid().then(sid => {
-            console.log('my sid', sid);
+            //console.log('my sid', sid);
             xhr(this.joinHttpRoute, {
                 query: { sid: sid, },
                 handleAs: "json",
@@ -191,7 +191,7 @@ export class SocketPeer extends Peer {
         if (this.windowNumber === null) {
             this.adoptNumberFromMapping();
         }
-        console.log('after updateWindowGroupMapping', this);
+        //console.log('after updateWindowGroupMapping', this);
 
         const mapping = this.copyMessage(msg);
         const event = {
