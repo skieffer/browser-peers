@@ -92,6 +92,8 @@ export class SocketPeer extends Peer {
             windowDisconnected: eventName.windowDisconnected || 'windowDisconnected',
             handleWindowMessage: eventName.handleWindowMessage || 'handleWindowMessage',
             postWindowMessage: eventName.postWindowMessage || 'postWindowMessage',
+            genericWindowEvent: eventName.genericWindowEvent || 'genericWindowEvent',
+            sendWindowEvent: eventName.sendWindowEvent || 'sendWindowEvent',
         };
 
         this.windowGroupId = null;
@@ -155,6 +157,7 @@ export class SocketPeer extends Peer {
         this.socket.on(this.eventName.updateWindowGroupMapping, this.updateWindowGroupMapping.bind(this));
         this.socket.on(this.eventName.windowDisconnected, this.windowDisconnected.bind(this));
         this.socket.on(this.eventName.handleWindowMessage, this.handleWindowMessage.bind(this));
+        this.socket.on(this.eventName.genericWindowEvent, this.genericWindowEvent.bind(this));
     }
 
     addNewWindowToGroup(msg) {
@@ -226,6 +229,26 @@ export class SocketPeer extends Peer {
         super.handleMessage(wrapper);
     }
 
+    /* While other socket event handlers are set off with special names to mark their
+     * role in the basic protocol whereby we keep windows aware of one another, here
+     * we provide space for any user-defined events users of this class may wish to
+     * define.
+     *
+     * This is to be understood as providing an alternative to the request/response
+     * system provided by our Peer base class. Using `sendWindowEvent`, any window
+     * can send out an event, without expecting any response. Windows listen to
+     * such events as they would to any other, using the `on` method of this class
+     * to set a listener.
+     *
+     * An event object should be any serializable object with a `type` property,
+     * indicating what type of event it is. The value of the `type` property must
+     * not collide with any of the built in listenable events, listed in this
+     * class's doctext.
+     */
+    genericWindowEvent(event) {
+        this.dispatch(event);
+    }
+
     // -----------------------------------------------------------------------
     // Misc internals
 
@@ -292,6 +315,14 @@ export class SocketPeer extends Peer {
         this.socket.emit(this.eventName.postWindowMessage, wrapper);
     }
 
+    lookUpPeerName(windowNumber) {
+        const peerName = this.windowMapping.get(windowNumber);
+        if (typeof peerName === 'undefined') {
+            throw new Error(`Unknown window number: ${windowNumber}`);
+        }
+        return peerName;
+    }
+
     // ------------------------------------------------------------------------
     // API
 
@@ -319,10 +350,39 @@ export class SocketPeer extends Peer {
      * number instead of the window's SID (since we use the latter internally as peerName).
      */
     makeWindowRequest(windowNumber, handlerDescrip, args, options) {
-        const peerName = this.windowMapping.get(windowNumber);
-        if (typeof peerName === 'undefined') {
-            throw new Error(`Unknown window number: ${windowNumber}`);
-        }
+        const peerName = this.lookUpPeerName(windowNumber);
         return this.makeRequest(peerName, handlerDescrip, args, options);
     }
+
+    /* Send an event, without expecting any response.
+     *
+     * @param windowNumber {int|null} the number of the window you want to receive the
+     *   event, or null if you want to "groupcast" the event to all windows in the group.
+     * @param event {obj} any object with a `type` property.
+     */
+    sendWindowEvent(windowNumber, event) {
+        let room;
+        if (windowNumber === null) {
+            if (!this.windowGroupId) {
+                throw new Error('Cannot groupcast without windowGroupId.');
+            }
+            room = this.windowGroupId;
+        } else {
+            room = this.lookUpPeerName(windowNumber);
+        }
+        const wrapper = {
+            room: room,
+            event: event,
+        };
+        this.socket.emit(this.eventName.sendWindowEvent, wrapper);
+    }
+
+    /* Convenience method to send an event to all windows in the group.
+     *
+     * @param event {obj} any object with a `type` property.
+     */
+    groupcastEvent(event) {
+        this.sendWindowEvent(null, event);
+    }
+
 }
