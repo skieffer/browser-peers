@@ -300,7 +300,7 @@ export class SocketPeer extends Peer {
      * @return {int} this window's number.
      */
     getWindowNumber() {
-        return this.windowNumber;
+        return this.windowNumber || 0;
     }
 
     /* Get the array of all window numbers sorted in increasing order.
@@ -308,7 +308,11 @@ export class SocketPeer extends Peer {
      * @return {Array[int]} all window numbers sorted in increasing order.
      */
     getAllWindowNumbers() {
-        return Array.from(this.windowMapping.keys()).sort();
+        if (this.windowMapping) {
+            return Array.from(this.windowMapping.keys()).sort();
+        } else {
+            return [];
+        }
     }
 
     /* Wraps base class's `makeRequest` method, allowing user to pass the window
