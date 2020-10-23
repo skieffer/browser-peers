@@ -107,6 +107,10 @@ export class SocketPeer extends Peer {
         }, false);
     }
 
+    getGroupId() {
+        return this.windowGroupId;
+    }
+
     sidFromFullId(fullId) {
         return fullId.split("#")[1];
     }
