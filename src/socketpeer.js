@@ -314,6 +314,14 @@ export class SocketPeer extends Peer {
         throw new Error(`Could not find sid ${this.sid} in window mapping`);
     }
 
+    getAllPeerNames() {
+        if (this.windowMapping) {
+            return Array.from(this.windowMapping.values());
+        } else {
+            return [];
+        }
+    }
+
     postMessageAsPeer(peerName, wrapper) {
         wrapper.room = peerName;
         this.socket.emit(this.eventName.postWindowMessage, wrapper);
