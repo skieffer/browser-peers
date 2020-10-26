@@ -375,9 +375,11 @@ export class Peer {
      * @param args {obj} the arguments object to be passed to the handler on the other side.
      *
      * @param options: {
+     *   excludeSelf {bool} If true, do not send the request to self.
      *   filter {function} optional function mapping peer names to booleans. Allows to
-     *     broadcast to a subset of all connected peers, namely those mapping to `true`. If not
-     *     provided, all peers are included.
+     *     broadcast to a subset of all connected peers, namely those mapping to `true`.
+     *     If `excludeSelf` is true, that exclusion happens first, and the given filter
+     *     is applied to what remains.
      *   skipReadyChecks {bool} optional, default false. If false we will precede each
      *     request with a readiness check. Set true to skip.
      * }
@@ -396,10 +398,11 @@ export class Peer {
      */
     broadcastRequest(handlerDescrip, args, options) {
         const {
+            excludeSelf = false,
             filter = (() => true),
             skipReadyChecks = false
         } = options || {};
-        const peerNames = this.getAllPeerNames().filter(filter);
+        const peerNames = this.getAllPeerNames().filter(name => (!excludeSelf) || name !== this.name).filter(filter);
         const responsePromises = [];
         for (let peerName of peerNames) {
             responsePromises.push(this.makeRequest(peerName, handlerDescrip, args, {
