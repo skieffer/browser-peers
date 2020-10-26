@@ -49,6 +49,8 @@ export class SocketPeer extends Peer {
      *     that make up the protocol employed by this class in order to maintain its connections
      *     to its peers. Since you can already chose the namespace when you formed the socket,
      *     you probably don't need to change any of these event names, but you may if you wish.
+     *   eventNamePrefix: {string} prefix you would like to add onto every event name, even
+     *     if you provide your own names in `eventName`
      * }
      */
     constructor(socket, options) {
@@ -82,6 +84,7 @@ export class SocketPeer extends Peer {
         const {
             joinHttpRoute = '/joinSessionWindowGroup',
             eventName = {},
+            eventNamePrefix = '',
         } = options || {};
         this.joinHttpRoute = joinHttpRoute;
         this.eventName = {
@@ -95,6 +98,9 @@ export class SocketPeer extends Peer {
             genericWindowEvent: eventName.genericWindowEvent || 'genericWindowEvent',
             sendWindowEvent: eventName.sendWindowEvent || 'sendWindowEvent',
         };
+        for (let k of Object.keys(this.eventName)) {
+            this.eventName[k] = eventNamePrefix + this.eventName[k];
+        }
 
         this.windowGroupId = null;
         this.windowNumber = null;
