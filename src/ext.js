@@ -69,7 +69,7 @@ export class BasicSignalling extends PsCsPeer {
 }
 
 /*
- * Page scripts wishing to use the extension should instantiate this class.
+ * Page scripts wishing to use an extension should instantiate this class.
  * This provides a client that can pass requests to, and receive responses from,
  * the extension. It can also receive requests from the extension, and respond.
  *

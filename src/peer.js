@@ -375,7 +375,9 @@ export class Peer {
      * @param args {obj} the arguments object to be passed to the handler on the other side.
      *
      * @param options: {
-     *   excludeSelf {bool} If true, do not send the request to self.
+     *   excludeSelf {bool} If true, do not send the request to self. This is relevant for
+     *     some peer types that keep their own name in their set of peers; for those that
+     *     do not, it can be ignored.
      *   filter {function} optional function mapping peer names to booleans. Allows to
      *     broadcast to a subset of all connected peers, namely those mapping to `true`.
      *     If `excludeSelf` is true, that exclusion happens first, and the given filter
