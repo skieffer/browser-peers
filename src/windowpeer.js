@@ -71,30 +71,6 @@ export class WindowPeer extends Peer {
         // before activation.
     }
 
-    enable() {
-        window.addEventListener("beforeunload", () => {
-            this.socket.emit(this.eventName.depart);
-        }, false);
-
-        this.socket.on('disconnect', () => {
-            this.dispatch({
-                type: 'disconnect',
-                target: this,
-            });
-        });
-
-        // Any time we (re)connect, we need to (re)join.
-        this.socket.on('connect', () => {
-            this.join();
-        });
-
-        // If we already are connected, we can join right now. Otherwise, it will
-        // happen in our 'connect' handler.
-        if (this.socket.connected) {
-            this.join();
-        }
-    }
-
     /* Join the window group.
      *
      * @throws: Error if we don't have a name yet, or if the XHR fails.
@@ -250,6 +226,37 @@ export class WindowPeer extends Peer {
     // ------------------------------------------------------------------------
     // API
 
+    /* Call this after adding handlers and listeners, in order to activate
+     * the connection and recognize other members of the group.
+     */
+    enable() {
+        window.addEventListener("beforeunload", () => {
+            this.socket.emit(this.eventName.depart);
+        }, false);
+
+        this.socket.on('disconnect', () => {
+            this.dispatch({
+                type: 'disconnect',
+                target: this,
+            });
+        });
+
+        // Any time we (re)connect, we need to (re)join.
+        this.socket.on('connect', () => {
+            this.join();
+        });
+
+        // If we already are connected, we can join right now. Otherwise, it will
+        // happen in our 'connect' handler.
+        if (this.socket.connected) {
+            this.join();
+        }
+    }
+
+    /* Get the window group id.
+     *
+     * @return {string} the window group id.
+     */
     getGroupId() {
         return this.windowGroupId;
     }
