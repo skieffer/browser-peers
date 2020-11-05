@@ -290,8 +290,10 @@ export class WindowPeer extends Peer {
      * @param windowNumber {int|null} the number of the window you want to receive the
      *   event, or null if you want to "groupcast" the event to all windows in the group.
      * @param event {obj} any object with a `type` property.
+     * @param includeSelf {boolean} set false to exclude self from the groupcast when
+     *   windowNumber is `null`.
      */
-    sendWindowEvent(windowNumber, event) {
+    sendWindowEvent(windowNumber, event, includeSelf = true) {
         let room;
         if (windowNumber === null) {
             if (!this.windowGroupId) {
@@ -304,6 +306,7 @@ export class WindowPeer extends Peer {
         const wrapper = {
             room: room,
             event: event,
+            includeSelf: includeSelf,
         };
         this.socket.emit(this.eventName.sendWindowEvent, wrapper);
     }
@@ -311,9 +314,10 @@ export class WindowPeer extends Peer {
     /* Convenience method to send an event to all windows in the group.
      *
      * @param event {obj} any object with a `type` property.
+     * @param includeSelf {boolean} set false to exclude self from the groupcast.
      */
-    groupcastEvent(event) {
-        this.sendWindowEvent(null, event);
+    groupcastEvent(event, includeSelf = true) {
+        this.sendWindowEvent(null, event, includeSelf);
     }
 
     /* In addition to the above API methods, this class also dispatches
