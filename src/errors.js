@@ -45,6 +45,25 @@ export class ExtensionUnavailableError extends Error {
 
 }
 
+/* Represents cases in which a Peer is attempting to look up another
+ * Peer, but cannot find it.
+ */
+export class UnknownPeerError extends Error {
+
+    constructor({ message }) {
+        super(message);
+        this.name = "UnknownPeerError";
+    }
+
+    serialize() {
+        return JSON.stringify({
+            _error_class_name: this.name,
+            message: this.message,
+        });
+    }
+
+}
+
 /*
  * This represents cases in which the extension is lacking host permission
  * for a given URL.
@@ -165,6 +184,7 @@ const KNOWN_ERROR_CLASSES = new Map()
     .set("ExtensionUnavailableError", ExtensionUnavailableError)
     .set("LackingHostPermissionError", LackingHostPermissionError)
     .set("FetchWrongContentTypeError", FetchWrongContentTypeError)
+    .set("UnknownPeerError", UnknownPeerError)
 ;
 
 /* Attempt to reconstitute a special error class instance from a generic Error.

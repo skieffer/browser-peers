@@ -4,6 +4,7 @@
 
 import { Peer } from "./peer";
 import { xhr } from "./util";
+import { UnknownPeerError } from "./errors";
 
 /* This peer is for communication between different browser tabs -- which we
  * call "windows" here, although the may well be tabs in the same browser window.
@@ -218,7 +219,7 @@ export class WindowPeer extends Peer {
     lookUpPeerName(windowNumber) {
         const peerName = this.windowNumbersToPeerNames.get(windowNumber);
         if (typeof peerName === 'undefined') {
-            throw new Error(`Unknown window number: ${windowNumber}`);
+            throw new UnknownPeerError({message: `Unknown window number: ${windowNumber}`});
         }
         return peerName;
     }
