@@ -3,7 +3,6 @@
 
 
 import { Peer } from "./peer";
-import { xhr } from "./util";
 import { UnknownPeerError } from "./errors";
 
 /* This peer is for communication between different browser tabs -- which we
@@ -26,9 +25,6 @@ export class WindowPeer extends Peer {
      * @param socket {Socket} A Socket instance as returned by a call to `io(namespace)`,
      *   using the Socket.IO client library.
      * @param options {
-     *   joinHttpRoute {string} the URL under which your server has published the HTTP route
-     *     to which this class needs to submit its SID in order to join the window group.
-     *     See `example/app.py` in this repo.
      *   eventName: object in which you may specify alternative names for the socket events
      *     that make up the protocol employed by this class in order to maintain its connections
      *     to its peers.
@@ -47,12 +43,11 @@ export class WindowPeer extends Peer {
         this.windowNumber = 0;
 
         const {
-            joinHttpRoute = '/joinSessionWindowGroup',
             eventName = {},
             eventNamePrefix = '',
         } = options || {};
-        this.joinHttpRoute = joinHttpRoute;
         this.eventName = {
+            join: eventName.join || 'join',
             depart: eventName.depart || 'depart',
             hello: eventName.hello || 'hello',
             welcome: eventName.welcome || 'welcome',
@@ -74,9 +69,12 @@ export class WindowPeer extends Peer {
 
     /* Join the window group.
      *
-     * @throws: Error if we don't have a name yet, or if the XHR fails.
+     * @throws: Error if we don't have a name yet.
      */
     join() {
+        // Note: while we do not actually need to send our name in the join
+        // event, it is important that we ensure we have one by this time.
+        // It will be used later.
         const name = this.getName();
         if (name === null) {
             throw new Error('Cannot join window group without a name.');
@@ -84,10 +82,7 @@ export class WindowPeer extends Peer {
         this.name = name;
         // Reset, in case still have garbage from a prior connection.
         this.reset();
-        xhr(this.joinHttpRoute, {
-            query: { name: name, birthday: this.birthday },
-            handleAs: "json",
-        });
+        this.socket.emit(this.eventName.join, {birthday: this.birthday});
     }
 
     getName() {
