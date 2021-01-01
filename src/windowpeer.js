@@ -182,10 +182,20 @@ export class WindowPeer extends Peer {
     }
 
     recomputeWindowNumbers() {
+        let deletedNumber = null;
+        const peerNamesToOldWindowNumbers = new Map();
+        for (let [num, name] of this.windowNumbersToPeerNames) {
+            peerNamesToOldWindowNumbers.set(name, num);
+            if (!this.peerNamesToBirthdays.has(name)) {
+                deletedNumber = num;
+            }
+        }
+
         const A = Array.from(this.peerNamesToBirthdays.entries()).sort((p1, p2) => {
             const [bday1, bday2] = [p1[1], p2[1]];
             return bday1 < bday2 ? -1 : bday1 > bday2 ? 1 : 0;
         });
+
         this.windowNumbersToPeerNames.clear();
         for (let [i, [peerName, birthday]] of A.entries()) {
             this.windowNumbersToPeerNames.set(i + 1, peerName);
@@ -193,10 +203,23 @@ export class WindowPeer extends Peer {
                 this.windowNumber = i + 1;
             }
         }
+
+        const oldNumbersToNewNumbers = new Map();
+        for (let [newNumber, peerName] of this.windowNumbersToPeerNames) {
+            if (peerNamesToOldWindowNumbers.has(peerName)) {
+                let oldNumber = peerNamesToOldWindowNumbers.get(peerName);
+                if (newNumber !== oldNumber) {
+                    oldNumbersToNewNumbers.set(oldNumber, newNumber);
+                }
+            }
+        }
+
         const event = {
             type: 'updateMapping',
             target: this,
             mapping: Object.fromEntries(this.windowNumbersToPeerNames.entries()),
+            numberUpdates: Object.fromEntries(oldNumbersToNewNumbers.entries()),
+            deletedNumber: deletedNumber,
         };
         this.dispatch(event);
     }
