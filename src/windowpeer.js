@@ -1,19 +1,18 @@
 /*! browser-peers v0.1.0 | Copyright (c) 2020-2021 Steve Kieffer | MIT license */
 /* SPDX-License-Identifier: MIT */
 
-
 import { Peer } from "./peer";
 import { UnknownPeerError } from "./errors";
 
 /* This peer is for communication between different browser tabs -- which we
  * call "windows" here, although the may well be tabs in the same browser window.
  *
- * FIXME: refactor socket-specific code into a "SocketTransport" class.
- * It requires the use of Socket.IO, and is not a complete solution unto itself,
- * but also requires that its communication protocol be supported on the server
- * side. See `example/app.py` in this repo.
+ * This class is however not a complete solution unto itself. It requires that its
+ * communication protocol be supported either by a browser extension, or by an external
+ * server. Accordingly, you must pass it an instance of one of the Transport classes
+ * defined in the `transport.js` module.
  *
- * After constructing an instance, you must call its `.enable()` method in order
+ * Note: After constructing a WindowPeer, you must call its `.enable()` method in order
  * to join what we call the "window group", i.e. the set of browser tabs that are
  * able to communicate with one another. This is to give you a chance to register
  * your own handlers and listeners before activation. Handlers and listeners are
@@ -22,8 +21,11 @@ import { UnknownPeerError } from "./errors";
 export class WindowPeer extends Peer {
 
     /*
-     * @param socket {Socket} A Socket instance as returned by a call to `io(namespace)`,
-     *   using the Socket.IO client library.
+     * @param transport: an instance of a Transport class. See transport.js.
+     *   Note: you may pass `null` at construction time, and set the transport later,
+     *   using either the `setTransport()` method or the `enable()` method. This can be
+     *   useful in cases where you want to be able to register listeners on this peer
+     *   before you are ready to enable it.
      * @param options {
      *   eventName: object in which you may specify alternative names for the socket events
      *     that make up the protocol employed by this class in order to maintain its connections
@@ -32,10 +34,10 @@ export class WindowPeer extends Peer {
      *     any names you provided in `eventName`.
      * }
      */
-    constructor(socket, options) {
+    constructor(transport, options) {
         super(null);
         this.birthday = `${Date.now()}:${Math.random()}`;
-        this.socket = socket;
+        this.transport = transport;
         this.windowGroupId = null;
 
         this.peerNamesToBirthdays = new Map();
@@ -60,11 +62,14 @@ export class WindowPeer extends Peer {
         for (let k of Object.keys(this.eventName)) {
             this.eventName[k] = eventNamePrefix + this.eventName[k];
         }
-        this.setUpHandlers();
 
         // NOTE: The peer is not active until you call the `enable()` method!
         // This is to give you a chance to register your own handlers and listeners
         // before activation.
+    }
+
+    setTransport(transport) {
+        this.transport = transport;
     }
 
     /* Join the window group.
@@ -72,25 +77,18 @@ export class WindowPeer extends Peer {
      * @throws: Error if we don't have a name yet.
      */
     join() {
+        this.setUpHandlers();
         // Note: while we do not actually need to send our name in the join
         // event, it is important that we ensure we have one by this time.
         // It will be used later.
-        const name = this.getName();
+        const name = this.transport.getName();
         if (name === null) {
             throw new Error('Cannot join window group without a name.');
         }
         this.name = name;
         // Reset, in case still have garbage from a prior connection.
         this.reset();
-        this.socket.emit(this.eventName.join, {birthday: this.birthday});
-    }
-
-    getName() {
-        return this.sidFromFullId(this.socket.id);
-    }
-
-    sidFromFullId(fullId) {
-        return fullId.split("#")[1];
+        this.transport.emit(this.eventName.join, {birthday: this.birthday});
     }
 
     // -----------------------------------------------------------------------
@@ -105,7 +103,7 @@ export class WindowPeer extends Peer {
             "genericWindowEvent",
         ];
         for (let name of names) {
-            this.socket.on(this.eventName[name], this[name].bind(this));
+            this.transport.setProtocolHandler(this.eventName[name], this[name].bind(this));
         }
     }
 
@@ -118,7 +116,7 @@ export class WindowPeer extends Peer {
         this.addPeer(name, birthday);
         // But do not welcome self. That would be redundant.
         if (name !== this.name) {
-            this.socket.emit(this.eventName.welcome, {to: name, from: this.name, birthday: this.birthday});
+            this.transport.emit(this.eventName.welcome, {to: name, from: this.name, birthday: this.birthday});
         }
     }
 
@@ -231,7 +229,7 @@ export class WindowPeer extends Peer {
 
     postMessageAsPeer(peerName, wrapper) {
         wrapper.room = peerName;
-        this.socket.emit(this.eventName.postWindowMessage, wrapper);
+        this.transport.emit(this.eventName.postWindowMessage, wrapper);
     }
 
     lookUpPeerName(windowNumber) {
@@ -247,13 +245,20 @@ export class WindowPeer extends Peer {
 
     /* Call this after adding handlers and listeners, in order to activate
      * the connection and recognize other members of the group.
+     *
+     * This is also the last possible moment to set the transport, if you set it
+     * as null at construction time.
+     *
+     * @param transport: optional -- last chance to set the transport before enabling.
      */
-    enable() {
+    enable(transport) {
+        if (transport) this.setTransport(transport);
+
         window.addEventListener("beforeunload", () => {
-            this.socket.emit(this.eventName.depart);
+            this.transport.emit(this.eventName.depart);
         }, false);
 
-        this.socket.on('disconnect', () => {
+        this.transport.addListener('disconnect', () => {
             this.dispatch({
                 type: 'disconnect',
                 target: this,
@@ -261,13 +266,13 @@ export class WindowPeer extends Peer {
         });
 
         // Any time we (re)connect, we need to (re)join.
-        this.socket.on('connect', () => {
+        this.transport.addListener('connect', () => {
             this.join();
         });
 
         // If we already are connected, we can join right now. Otherwise, it will
         // happen in our 'connect' handler.
-        if (this.socket.connected) {
+        if (this.transport.connected) {
             this.join();
         }
     }
@@ -327,7 +332,7 @@ export class WindowPeer extends Peer {
             event: event,
             includeSelf: includeSelf,
         };
-        this.socket.emit(this.eventName.sendWindowEvent, wrapper);
+        this.transport.emit(this.eventName.sendWindowEvent, wrapper);
     }
 
     /* Convenience method to send an event to all windows in the group.
@@ -355,7 +360,7 @@ export class WindowPeer extends Peer {
      *      }
      *
      * disconnect:
-     *      Fired when this WindowPeer's socket's disconnect event is fired.
+     *      Fired if this WindowPeer becomes disconnected.
      *
      *      Event format: {
      *          type: 'disconnect',
