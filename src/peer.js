@@ -120,7 +120,9 @@ export class Peer {
         }
         // Call the handler inside `Promise.resolve` so we can work with it asynchronously,
         // even if the handler returns synchronously.
-        Promise.resolve(handler(args)).then(result => {
+        // We pass the whole wrapper as a second argument (which the handler may choose
+        // to ignore), in case the handler needs the "meta" information (such as the peer name).
+        Promise.resolve(handler(args, wrapper)).then(result => {
             this.returnResponse(peerName, seqNum, result);
         }).catch(reason => {
             reason = this.checkHandlingError(reason, wrapper);
