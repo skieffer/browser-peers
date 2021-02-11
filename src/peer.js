@@ -227,7 +227,14 @@ export class Peer {
     // Request handlers
 
     /* Add a handler function or handler object.
+     *
+     * Handler functions will be passed two arguments: `args` and `meta`. The first is an
+     * object passed by the client and presumably containing all the arguments required by
+     * the handler; the second is an object containing meta information about the request,
+     * such as the name of the client (which is under `meta.from`).
+     *
      * Handlers may return a value synchronously, or may return a Promise. Either is acceptable.
+     *
      * You may not register a handler under a reserved name, i.e. the names of any of our
      * built-in handlers. These are defined in the constructor.
      *

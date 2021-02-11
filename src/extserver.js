@@ -52,7 +52,7 @@ export class ExtensionServer extends BasicSignalling {
         this.host_vers_attr = host_vers_attr;
         this.ext_vers_value = browser.runtime.getManifest().version;
         this._addBuiltInHandler('checkVers', this.checkVersHandler.bind(this));
-        this._addBuiltInHandler('sendMessage', browser.runtime.sendMessage);
+        this._addBuiltInHandler('sendMessage', this.runtimeSendMessage.bind(this));
     }
 
     // --------------------------------------------------------------------------------
@@ -75,11 +75,18 @@ export class ExtensionServer extends BasicSignalling {
         });
     }
 
-    /* Note: the other built-in handler, 'sendMessage', is just a route straight to
-     * `browser.runtime.sendMessage`, and thus provides a way for page scripts (via
-     * an ExtensionClient) to send a message to the extension's background script.
-     * Of course, the BGS must set up listening for this via `browser.runtime.onMessage`.
+    /* This provides a way for page scripts (via an ExtensionClient) to send a message to
+     * the extension's background script. Of course, the BGS must set up listening for this
+     * via `browser.runtime.onMessage`.
+     *
+     * Note: We need this wrapper method (i.e. cannot simply set `browser.runtime.sendMessage`
+     * itself as the handler) because we have to filter out the second, `meta` argument.
+     * If both args were passed to `browser.runtime.sendMessage`, it would interpret one of
+     * these as its optional `options` arg, which would be a bug.
      */
+    runtimeSendMessage(args, meta) {
+        return browser.runtime.sendMessage(args);
+    }
 
     // --------------------------------------------------------------------------------
 
