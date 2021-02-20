@@ -2,6 +2,7 @@
 /* SPDX-License-Identifier: MIT */
 
 import { reconstituteError } from "./errors";
+import { Listenable } from "./util";
 
 /* This is the abstract base class for all of our peer classes.
  * It implements everything to do with making and handling requests and responses.
@@ -11,13 +12,14 @@ import { reconstituteError } from "./errors";
  * base class.
  *
  */
-export class Peer {
+export class Peer extends Listenable {
 
     /*
      * @param name {string} a unique name for this peer, to tell it apart
      *   from all others.
      */
     constructor(name) {
+        super({});
         this.name = name;
         this.handlers = new Map();
         this.nextSeqNum = 0;
@@ -36,39 +38,6 @@ export class Peer {
         ;
         for (let [name, handler] of this.builtInHandlers) {
             this._addHandler(name, handler);
-        }
-
-        this.listeners = {};
-    }
-
-    // ------------------------------------------------------------------------
-    // Events
-
-    on(eventType, callback) {
-        const cbs = this.listeners[eventType] || [];
-        cbs.push(callback);
-        this.listeners[eventType] = cbs;
-    }
-
-    off(eventType, callback) {
-        const cbs = this.listeners[eventType] || [];
-        const i0 = cbs.indexOf(callback);
-        if (i0 >= 0) {
-            cbs.splice(i0, 1);
-            this.listeners[eventType] = cbs;
-        }
-    }
-
-    dispatch(event) {
-        /* Subtle point: In general, we are always careful not to modify an
-         * iterable while we are in the process of iterating over it. Here, we don't
-         * know whether a callback might `off` itself as a part of its process,
-         * thereby modifying our array of listeners while we are iterating over it!
-         * Therefore, to be safe, we have to iterate over a _copy_ of our array of
-         * registered listeners. */
-        const cbs = (this.listeners[event.type] || []).slice();
-        for (let cb of cbs) {
-            cb(event);
         }
     }
 

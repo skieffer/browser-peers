@@ -63,3 +63,39 @@ export function enrichXhrParams(givenParams, extraPairs) {
     }
     return params;
 }
+
+export class Listenable {
+
+    constructor(listeners) {
+        this.listeners = listeners;
+    }
+
+    on(eventType, callback) {
+        const cbs = this.listeners[eventType] || [];
+        cbs.push(callback);
+        this.listeners[eventType] = cbs;
+    }
+
+    off(eventType, callback) {
+        const cbs = this.listeners[eventType] || [];
+        const i0 = cbs.indexOf(callback);
+        if (i0 >= 0) {
+            cbs.splice(i0, 1);
+            this.listeners[eventType] = cbs;
+        }
+    }
+
+    dispatch(event) {
+        /* Subtle point: In general, we are always careful not to modify an
+         * iterable while we are in the process of iterating over it. Here, we don't
+         * know whether a callback might `off` itself as a part of its process,
+         * thereby modifying our array of listeners while we are iterating over it!
+         * Therefore, to be safe, we have to iterate over a _copy_ of our array of
+         * registered listeners. */
+        const cbs = (this.listeners[event.type] || []).slice();
+        for (let cb of cbs) {
+            cb(event);
+        }
+    }
+
+}
