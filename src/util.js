@@ -38,3 +38,28 @@ export function xhr(url, params) {
         }
     });
 }
+
+/* Add extra key-value arguments to an XHR.
+ *
+ * @param givenParams: a `params` arg which would have been passed to the
+ *   `xhr` function defined in this module.
+ * @param extraPairs: an object defining extra key-value args that you want to
+ *   add to the request.
+ * @return: a _new_ params object. The given one is not modified.
+ *   The extra pairs are placed in `params.query` if `query` was defined in the
+ *   givenParams, else in `params.form` if that was defined. If neither was defined,
+ *   then we define `params.query` and put the extra pairs in there.
+ */
+export function enrichXhrParams(givenParams, extraPairs) {
+    const params = {};
+    Object.assign(params, givenParams || {});
+    if (params.query) {
+        Object.assign(params.query, extraPairs);
+    } else if (params.form) {
+        Object.assign(params.form, extraPairs);
+    } else {
+        params.query = {};
+        Object.assign(params.query, extraPairs);
+    }
+    return params;
+}
