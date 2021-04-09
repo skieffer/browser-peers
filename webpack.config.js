@@ -1,18 +1,42 @@
 const path = require('path');
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 module.exports = env => {
-    const devmode = !!(env||{}).dev;
     return {
         entry: {
-            'test1': './src/test/test_page_01.js',
+            'wgflask': './examples/wgflask/index.js',
         },
         output: {
-            path: path.resolve(__dirname, 'dist'),
+            path: path.resolve(__dirname, 'build'),
             filename: pathData => {
-                return pathData.chunk.name.startsWith('test') ? 'test/[name].js' : '[name].js';
+                return {
+                    wgflask: 'wgflask/static/index.js',
+                }[pathData.chunk.name];
             },
         },
-        mode: devmode ? 'development' : 'production',
-        devtool: devmode ? 'inline-source-map' : false,
+        mode: 'development',
+        devtool: 'inline-source-map',
+        plugins: [
+            new CopyWebpackPlugin({
+                patterns:[
+                    {
+                        context: "examples/wgflask",
+                        from: "app.py",
+                        to: "wgflask/app.py"
+                    },
+                    {
+                        context: "examples/wgflask",
+                        from: "templates",
+                        to: "wgflask/templates"
+                    },
+                    {
+                        context: "examples/wgflask",
+                        from: ".flaskenv",
+                        to: "wgflask/.flaskenv",
+                        toType: "file",
+                    },
+                ],
+            }),
+        ],
     };
 };

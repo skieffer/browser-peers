@@ -4,6 +4,6 @@
 *.swo
 *.DS_Store
 .idea
-dist
+build
 node_modules
-
+examples/wgflask/venv

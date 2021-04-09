@@ -82,7 +82,7 @@ export class WindowPeer extends Peer {
         // event, it is important that we ensure we have one by this time.
         // It will be used later.
         const name = this.transport.getName();
-        if (name === null) {
+        if (!name) {
             throw new Error('Cannot join window group without a name.');
         }
         this.name = name;

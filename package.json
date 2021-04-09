@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "description": "Promise-based requests and responses across various boundaries in web programming.",
   "scripts": {
-    "build": "webpack",
-    "build:dev": "webpack --env.dev"
+    "build_examp": "webpack"
   },
   "author": "Steve Kieffer",
   "license": "MIT",
   "devDependencies": {
+    "copy-webpack-plugin": "^6.4.1",
     "jquery": "^3.5.1",
-    "socket.io-client": "^2.3.1",
+    "socket.io-client": "^4.0.1",
     "webpack": "^4.44.1",
     "webpack-cli": "^3.3.12"
   },

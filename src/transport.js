@@ -29,7 +29,13 @@ export class SocketTransport {
 
     getName() {
         const fullId = this.socket.id;
-        return fullId.split("#")[1];
+        /* In v2.x of the socketio client, the `id` would be of the form
+         *   /NAMESPACE#HASH
+         * and we wanted just the HASH, so we split on "#" and took the last part.
+         * In v4.x (have not experimented with v3.x), the `id` is just a HASH.
+         * The following code works for both versions.
+         */
+        return fullId.split("#").slice(-1)[0];
     }
 
     get connected() {
