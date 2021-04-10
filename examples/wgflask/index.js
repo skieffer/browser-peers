@@ -5,8 +5,8 @@
 const $ = require('jquery');
 const io = require('socket.io-client')
 
-import { WindowPeer } from "../../src/windowpeer";
 import { SocketTransport } from "../../src/transport";
+import { makeSimpleDemoPeer } from "../peer_demo";
 
 $(document).ready(function() {
 
@@ -16,58 +16,7 @@ $(document).ready(function() {
 
     const socket = io(namespace);
     const transport = new SocketTransport(socket);
-    const peer = new WindowPeer(transport, {
-        eventNamePrefix: eventNamePrefix,
-    });
-
-    peer.on('updateMapping', event => {
-        console.log(event);
-        const numbers = peer.getAllWindowNumbers();
-        const myNumber = peer.getWindowNumber();
-        const otherNumbers = numbers.filter(n => n !== myNumber);
-
-        if (otherNumbers.length) {
-            let title = `Window (${myNumber})`;
-            document.title = title;
-            $('#identity').html(title);
-            $("input").prop( "disabled", false );
-        } else {
-            document.title = 'Window';
-            $('#identity').html('the only window.');
-            $("input").prop( "disabled", true );
-        }
-
-        let rbs = '';
-        for (let n of otherNumbers) {
-            rbs += `<label><input type="radio" name="dest" value="${n}" ${rbs.length ? "" : "checked"}>${n}</label>\n`;
-        }
-        $('#radioBox').html(rbs);
-    });
-
-    function logMessage(msg) {
-        $('#log').append('<br>' + $('<div/>').text(msg).html());
-    }
-
-    peer.addHandler('log', args => {
-        logMessage(`From window #${args.src}: ${args.msg}`);
-    });
-
-    $('form#send').submit(function(event) {
-        const checked = document.querySelector("input[name=dest]:checked");
-        if (checked) {
-            const dest = +checked.value;
-            const src = peer.getWindowNumber();
-            const mb = $('#messageBox')
-            const msg = mb.val();
-            mb.val('');
-            peer.makeWindowRequest(dest, 'log', {
-                src: src,
-                msg: msg,
-            });
-        }
-        return false;
-    });
-
+    const peer = makeSimpleDemoPeer(transport, eventNamePrefix);
     peer.enable();
 
 });

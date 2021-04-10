@@ -25,9 +25,9 @@ module.exports = env => {
                         to: "wgflask/app.py"
                     },
                     {
-                        context: "examples/wgflask",
-                        from: "templates",
-                        to: "wgflask/templates"
+                        context: "examples",
+                        from: "demo_page.html",
+                        to: "wgflask/templates/index.html"
                     },
                     {
                         context: "examples/wgflask",

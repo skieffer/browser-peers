@@ -36,5 +36,6 @@ When you're done testing, you can stop the web server with `Ctrl-C`.
 
 ## How it Works
 
-You can examine `app.py` and `index.js` in this directory in order to see what is required on the server side, and
-respectively on the client side, in order to make this example work. 
+You can examine `app.py` in this directory in order to see what is required on the server side.
+For the client side, see `index.js` in this directory, as well as `peer_demo.js` and `demo_page.html`
+in the `examples/` directory above this one.
