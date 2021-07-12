@@ -2,7 +2,7 @@
 /* SPDX-License-Identifier: MIT */
 
 import { Peer } from "./peer";
-import { UnknownPeerError } from "./errors";
+import { UnknownPeerError, NoGroupError } from "./errors";
 
 /* This peer is for communication between different browser tabs -- which we
  * call "windows" here, although the may well be tabs in the same browser window.
@@ -321,7 +321,7 @@ export class WindowPeer extends Peer {
         let room;
         if (windowNumber === null) {
             if (!this.windowGroupId) {
-                throw new Error('Cannot groupcast without windowGroupId.');
+                throw new NoGroupError({message: 'Cannot groupcast without windowGroupId.'});
             }
             room = this.windowGroupId;
         } else {

@@ -25,6 +25,26 @@
 // Special error classes
 
 /*
+ * This error class represents cases in which we are trying to do something
+ * that involves belonging to a group, but we do not (yet) belong to one.
+ */
+export class NoGroupError extends Error {
+
+    constructor({ message }) {
+        super(message);
+        this.name = "NoGroupError";
+    }
+
+    serialize() {
+        return JSON.stringify({
+            _error_class_name: this.name,
+            message: this.message,
+        });
+    }
+
+}
+
+/*
  * This error class is intended to represent cases in which the extension has
  * become unavailable. Usually (actually the only case I'm currently aware of)
  * this is because the extension was uninstalled after that page was loaded.
@@ -181,6 +201,7 @@ export class FetchWrongContentTypeError extends FetchError {
 const KNOWN_ERROR_CLASSES = new Map()
     .set("FetchResolvedNotOkError", FetchResolvedNotOkError)
     .set("FetchRejectedError", FetchRejectedError)
+    .set("NoGroupError", NoGroupError)
     .set("ExtensionUnavailableError", ExtensionUnavailableError)
     .set("LackingHostPermissionError", LackingHostPermissionError)
     .set("FetchWrongContentTypeError", FetchWrongContentTypeError)
