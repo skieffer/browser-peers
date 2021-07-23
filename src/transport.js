@@ -4,6 +4,120 @@
 import {ExtensionUnavailableError} from "./errors";
 import {PsCsPeer} from "./pscspeer";
 
+export class BroadcastChannelTransport {
+
+    constructor(options) {
+        const {
+            channelName = 'Window-Peer-Protocol-Channel',
+            eventNamePrefix = '',
+        } = options || {};
+
+        this.eventNamePrefix = eventNamePrefix;
+        this.channelName = channelName;
+        this.windowGroupId = this.channelName;
+        this.name = `${Math.random()}${Math.random()}${Math.random()}`;
+        this.protocolHandlers = new Map();
+
+        this.bc = new BroadcastChannel(this.channelName);
+        this.bc.addEventListener('message', event => {
+            this.receive(event.data);
+        });
+
+        const basicNames = ['join', 'depart', 'hello', 'welcome', 'observeDeparture',
+            'handleWindowMessage', 'postWindowMessage', 'genericWindowEvent', 'sendWindowEvent'];
+        this.eventName = {};
+        for (let name of basicNames) {
+            this.eventName[name] = eventNamePrefix + name;
+        }
+    }
+
+    broadcast(eventType, message, options) {
+        const {
+            whitelist = [],
+            blacklist = [],
+        } = options || {};
+        const wrapper = {
+            type: eventType,
+            whitelist: whitelist,
+            blacklist: blacklist,
+            message: message,
+        };
+        //console.log('Broadcasting: ', wrapper);
+        this.bc.postMessage(wrapper);
+        // BroadcastChannels do _not_ send to themselves, so we have to do that manually:
+        this.receive(wrapper);
+    }
+
+    appliesToMe(whitelist, blacklist) {
+        return whitelist.includes(this.name) || (whitelist.length === 0 && !blacklist.includes(this.name));
+    }
+
+    receive({type, whitelist, blacklist, message}) {
+        //console.log('Receiving: ', {type, whitelist, blacklist, message});
+        if (this.appliesToMe(whitelist, blacklist)) {
+            const handler = this.protocolHandlers.get(type);
+            if (handler) {
+                handler(message);
+            } else {
+                console.error(`No handler for event: ${type}`);
+            }
+        }
+    }
+
+    setProtocolHandler(name, handler) {
+        this.protocolHandlers.set(name, handler);
+    }
+
+    addListener(eventType, callback) {
+        // The WindowPeer class only wants to listen to `connect` and `disconnect` events,
+        // but those are really only needed by the socket transport. We don't need to do anything here.
+    }
+
+    emit(event, message) {
+        switch (event) {
+            case this.eventName.join:
+                this.broadcast(this.eventName.hello, {
+                    windowGroupId: this.windowGroupId,
+                    name: this.name,
+                    birthday: message.birthday,
+                });
+                break;
+            case this.eventName.welcome:
+                this.broadcast(this.eventName.welcome, message, {
+                    whitelist: [message.to]
+                });
+                break;
+            case this.eventName.depart:
+                this.broadcast(this.eventName.observeDeparture, {'name': this.name}, {
+                    blacklist: [this.name]
+                });
+                break;
+            case this.eventName.postWindowMessage:
+                this.broadcast(this.eventName.handleWindowMessage, message, {
+                    whitelist: message.room === this.windowGroupId ? [] : [message.room],
+                });
+                break;
+            case this.eventName.sendWindowEvent:
+                this.broadcast(this.eventName.genericWindowEvent, message.event || {}, {
+                    whitelist: message.room === this.windowGroupId ? [] : [message.room],
+                    blacklist: message.includeSelf === false ? [this.name] : [],
+                });
+                break;
+            default:
+                console.error(`No emitter for event: ${event}`);
+        }
+    }
+
+    getName() {
+        return this.name;
+    }
+
+    get connected() {
+        return true;
+    }
+
+}
+
 export class SocketTransport {
 
     /*
