@@ -5,7 +5,7 @@
   "scripts": {
     "build_examp": "webpack"
   },
-  "author": "Steve Kieffer",
+  "author": "Steve Kieffer (https://skieffer.info)",
   "license": "MIT",
   "devDependencies": {
     "copy-webpack-plugin": "^6.4.1",
