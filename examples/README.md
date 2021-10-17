@@ -29,9 +29,13 @@ to communicate between multiple browser tabs/windows.
 
 ### Usage
 
-In `BROWSER_PEERS/examples/wgflask`, set up and activate a Python virtual environment:
+In `BROWSER_PEERS/examples/wgflask`, set up and activate a Python virtual environment. The example has been
+tested with Python 3.8. Earlier versions back to 3.6 will also likely work, but have not been tested. If you
+do not already have Python 3.8 accessible from the commandline, you might consider using [`pyenv`](https://github.com/pyenv/pyenv#installation).
+If using `pyenv`, you may proceed as follows:
 
-    $ pythom -m venv venv
+    $ pyenv shell 3.8.3
+    $ python -m venv venv
     $ . venv/bin/activate
     $ pip install --upgrade pip
     $ pip install -r requirements.txt

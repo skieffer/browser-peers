@@ -64,7 +64,9 @@ and where they are meant to be used.
 
 ### `WindowPeer` (`windowpeer.js`)
 
-This peer is for communication between different browser tabs, which we call "windows,"
-although they may well be tabs in the same browser window. It requires external support
-either by a browser extension, or a server. See examples of each approach in our
-`examples` directory.
+This peer is for communication between different browser windows, which we call "windows,"
+although they may well be tabs in the same browser window. It relies on one of three
+possible "transports" (see `transport.js`) to achieve inter-window communication. The
+simplest is based on the BroadcastChannel API, which is now available in most (but not
+yet all) modern browsers. The others utilize either a browser extension, or websockets.
+See examples of each approach in our `examples` directory.
