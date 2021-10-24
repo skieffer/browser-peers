@@ -69,4 +69,3 @@ although they may well be tabs in the same browser window. It relies on one of t
 possible "transports" (see `transport.js`) to achieve inter-window communication. The
 simplest is based on the BroadcastChannel API, which is now available in most (but not
 yet all) modern browsers. The others utilize either a browser extension, or websockets.
-See examples of each approach in our `examples` directory.
