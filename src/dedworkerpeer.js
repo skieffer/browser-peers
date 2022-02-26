@@ -13,23 +13,24 @@ import { Peer } from "./peer";
  *  In the page:
  *
  *      const worker = new Worker('worker.js');
- *      const peer = new DedicatedWorkerPeer('page', worker);
+ *      const peer = new DedicatedWorkerPeer(worker);
  *
  *  In the worker script (worker.js in this example):
  *
- *      const peer = new DedicatedWorkerPeer('worker', self);
+ *      const peer = new DedicatedWorkerPeer(self);
  *
  */
 export class DedicatedWorkerPeer extends Peer {
 
     /*
-     * @param name {string} A name for this peer.
      * @param iface {Worker, DedicatedWorkerGlobalScope} An interface that has a `postMessage` method,
      *   and an `onmessage` property. On the page side this will be the `Worker` instance with which you
      *   want to communicate, and in the worker script this will be `self`.
      */
-    constructor(name, iface) {
-        super(name);
+    constructor(iface) {
+        const [myName, nameOfPeer] = iface instanceof Worker ? ['page', 'worker'] : ['worker', 'page'];
+        super(myName);
+        this.nameOfPeer = nameOfPeer;
         this.iface = iface;
         this.boundMessageHandler = this.handleMessageEvent.bind(this);
         this.activateMessaging();
@@ -50,6 +51,13 @@ export class DedicatedWorkerPeer extends Peer {
     postMessageAsPeer(peerName, wrapper) {
         wrapper.to = peerName;
         this.iface.postMessage(wrapper);
+    }
+
+    /* Shortcut for makeRequest, so that you don't need to pass the name of the peer
+     * as the first argument.
+     */
+    postRequest(handlerDescrip, args, options) {
+        return this.makeRequest(this.nameOfPeer, handlerDescrip, args, options);
     }
 
 }
