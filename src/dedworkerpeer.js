@@ -36,6 +36,13 @@ export class DedicatedWorkerPeer extends Peer {
         this.activateMessaging();
     }
 
+    // Convenient way to terminate the Worker, from the page side.
+    terminate() {
+        if (this.nameOfPeer === 'worker') {
+            this.iface.terminate();
+        }
+    }
+
     activateMessaging() {
         this.iface.onmessage = this.boundMessageHandler;
     }
