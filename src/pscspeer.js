@@ -15,20 +15,31 @@ export class PsCsPeer extends Peer {
      * @param name {string} A unique name with which to tell this peer apart
      *   from all others.
      * @param ext_name {string} A name for the browser extension.
+     * @param options {
+     *   activateOnConstruction: bool (default true)
+     *     If true, activate messaging at end of constructor method.
+     * }
      */
-    constructor(name, ext_name) {
+    constructor(name, ext_name, options) {
         super(name);
+        const {
+            activateOnConstruction = true
+        } = options || {};
         this.ext_name = ext_name;
         this.boundMessageHandler = this.handleMessageEvent.bind(this);
-        this.activateMessaging();
+        if (activateOnConstruction) {
+            this.activateMessaging();
+        }
     }
 
     activateMessaging() {
         window.addEventListener("message", this.boundMessageHandler);
+        console.debug(`PsCsPeer "${this.name}" activated messaging.`);
     }
 
     deactivateMessaging() {
         window.removeEventListener("message", this.boundMessageHandler);
+        console.debug(`PsCsPeer "${this.name}" de-activated messaging.`);
     }
 
     handleMessageEvent(event) {

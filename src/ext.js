@@ -34,8 +34,8 @@ import { PsCsPeer } from "./pscspeer";
  */
 export class BasicSignalling extends PsCsPeer {
 
-    constructor(name, ext_name, signal_elt_selector, ext_vers_attr) {
-        super(name, ext_name);
+    constructor(name, ext_name, signal_elt_selector, ext_vers_attr, options) {
+        super(name, ext_name, options);
         this.signal_elt_selector = signal_elt_selector;
         this.ext_vers_attr = ext_vers_attr;
     }

@@ -20,6 +20,13 @@ export class Peer extends Listenable {
      */
     constructor(name) {
         super({});
+
+        // For development and testing in settings like browser extensions under
+        // Manifest V3 (where background scripts are repeatedly terminated and
+        // restarted) it can be helpful to print debugging output in which we see
+        // the time at which a given peer was constructed.
+        this.constructionTime = (new Date()).toLocaleTimeString();
+
         this.name = name;
         this.handlers = new Map();
         this.nextSeqNum = 0;
@@ -39,6 +46,10 @@ export class Peer extends Listenable {
         for (let [name, handler] of this.builtInHandlers) {
             this._addHandler(name, handler);
         }
+    }
+
+    fromAddress() {
+        return this.name;
     }
 
     copyMessage(msg) {
@@ -107,7 +118,7 @@ export class Peer extends Listenable {
     returnResponse(peerName, seqNum, result) {
         const wrapper = {
             type: 'response',
-            from: this.name,
+            from: this.fromAddress(),
             seqNum: seqNum,
             result: result,
         };
@@ -122,7 +133,7 @@ export class Peer extends Listenable {
     returnRejection(peerName, seqNum, reason) {
         const wrapper = {
             type: 'response',
-            from: this.name,
+            from: this.fromAddress(),
             seqNum: seqNum,
             rejection_reason: reason.message,
         };
@@ -326,7 +337,7 @@ export class Peer extends Listenable {
         const seqNum = this.takeNextSeqNum();
         const wrapper = {
             type: 'request',
-            from: this.name,
+            from: this.fromAddress(),
             seqNum: seqNum,
             handlerDescrip: handlerDescrip,
             args: args,

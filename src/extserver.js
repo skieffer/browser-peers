@@ -25,8 +25,11 @@ import { BasicSignalling } from "./ext";
  * uninstall/reinstall of the extension, as well as injection after the page is already
  * loaded.)
  *
- * The content script should instantiate an ExtensionServer, and then call the latter's
- * `activateOnReady` method to make it activate as soon as the page is ready.
+ * The content script should instantiate an ExtensionServer, and then call its
+ * `activateOnDocumentReady` method to make it activate as soon as the page is ready.
+ *
+ * NOTE: Be sure to read the docstring for the `activateOnDocumentReady` method. It returns a
+ * promise which you need to pay attention to.
  *
  * Under this design, the extension's background script is free to actively inject the
  * content script into host pages. The ExtensionServer (on Chrome) or ExtensionClient
@@ -48,7 +51,7 @@ export class ExtensionServer extends BasicSignalling {
      *   number of the host page will be available
      */
     constructor(name, ext_name = '', signal_elt_selector, ext_vers_attr, host_vers_attr) {
-        super(name, ext_name, signal_elt_selector, ext_vers_attr);
+        super(name, ext_name, signal_elt_selector, ext_vers_attr, {activateOnConstruction: false});
         this.host_vers_attr = host_vers_attr;
         this.ext_vers_value = browser.runtime.getManifest().version;
         this._addBuiltInHandler('checkVers', this.checkVersHandler.bind(this));
@@ -91,7 +94,7 @@ export class ExtensionServer extends BasicSignalling {
     // --------------------------------------------------------------------------------
 
     checkHandlingError(reason, wrapper) {
-        //console.log(`content script detected error: ${reason} for request: ${wrapper}`);
+        console.debug(`content script detected error: ${reason} for request: ${wrapper}`);
         if (reason.message === "Extension context invalidated.") {
             /* In Chrome this happens if the browser extension has been uninstalled or deactivated.
              * This provides a way for the content script to automatically disable itself, at
@@ -138,25 +141,80 @@ export class ExtensionServer extends BasicSignalling {
         signalElt.setAttribute(this.ext_vers_attr, this.ext_vers_value);
     }
 
-    conditionalActivation() {
+    _conditionalActivation(resolve, reject) {
         const host_vers = this.testForHost();
         const ext_vers = this.testForExtension();
+        let msg = `ExtensionServer "${this.name}" constructed at ${this.constructionTime}`;
         // Only if (a) the page _does_ appear to be the intended host, while (b) it does _not_
-        // appear that an extension content script has yet activated messaging, do we go ahead and
-        // activate messaging.
+        // appear that an extension content script has yet activated, do we go ahead and activate.
         if (host_vers !== null && ext_vers === null) {
-            // First make our mark to stop any others from setting up redundant messaging.
+            // First mark our presence, to stop any others from setting up a redundant server.
             this.markExtensionPresence();
-            this.activateMessaging();
+            console.debug(msg + ' chose to activate.');
+            this.activateMessaging()
+            resolve();
+        } else {
+            msg += ' declined to activate due to: '
+            msg += host_vers === null ? 'Not a host page.' : `Ext "${ext_vers}" already present.`;
+            console.debug(msg);
+            msg += ' You should ensure your content script removes any event listeners and makes no memory leaks.';
+            msg += ' (The ExtensionServer has already removed its own listeners.)';
+            reject(msg);
         }
     }
 
     /* The content script where the ExtensionServer is instantiated should call this to make
-     * the server "activate" as soon as the page is ready.
+     * the server either "activate" as soon as the page is ready, or decline to do so. It will
+     * decline either because the page is not a host page, or because the extension has already
+     * been activated here.
+     *
+     * Returns a promise which either _resolves_ when the server activates, or _rejects_ when it
+     * declines to do so.
+     *
+     * The right way to set up your content script therefore is as follows:
+     *
+     * - Try to make the initialization and activation of the ExtensionServer the first thing
+     *   you do.
+     *
+     * - Pass both a fulfillment handler and a rejection handler to the `then()` of the promise
+     *   this method returns.
+     *
+     * - Use the fulfillment handler to set up anything else the content script needs, in particular
+     *   anything that might involve adding event listeners.
+     *
+     * - If you had to set event listeners _before_ the call to `activateOnDocumentReady()`, be
+     *   sure to use the rejection handler to remove these listeners, and take any other
+     *   necessary steps to ensure your content script makes no memory leaks.
+     *
+     * - Even if you have no potential memory leaks to attend to, you should have a rejection
+     *   handler anyway, just to suppress the error message, and signal (to other developers)
+     *   that you've thought about it.
+     *
+     * Basically, your content script should be idempotent: running it a second time should not
+     * change anything. This is especially critical under Manifest V3, where background scripts
+     * are expected to run repeatedly. If your bg script programmatically injects your content
+     * script (so that the extension activates immediately on existing tabs, without having to
+     * reload them), then your content script too is going to run repeatedly within each tab.
+     * Even if you don't do any programmatic injection, you should write your content script
+     * carefully, to avoid memory leaks in case of repeated execution.
+     *
      */
-    activateOnReady() {
-        if (document.readyState !== 'loading') this.conditionalActivation();
-        else document.addEventListener('DOMContentLoaded', this.conditionalActivation.bind(this));
+    activateOnDocumentReady() {
+        return new Promise((resolve, reject) => {
+            if (document.readyState !== 'loading') {
+                this._conditionalActivation(resolve, reject);
+            } else {
+                /* We're not worried about this event listener as a memory leak.
+                 * It will only be added in cases where the content script has run
+                 * before the page has finished loading. That is not the "repeated
+                 * run" case we are worried about. The latter arises due to background
+                 * scripts which may re-inject content scripts when they re-run.
+                 */
+                document.addEventListener('DOMContentLoaded', _ => {
+                    this._conditionalActivation(resolve, reject);
+                });
+            }
+        });
     }
 
 }
