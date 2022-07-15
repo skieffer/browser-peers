@@ -1,4 +1,4 @@
-/*! browser-peers v0.1.0 | Copyright (c) 2020-2021 Steve Kieffer | MIT license */
+/*! browser-peers v0.1.0 | Copyright (c) 2020-2022 Steve Kieffer | MIT license */
 /* SPDX-License-Identifier: MIT */
 
 
