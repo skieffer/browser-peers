@@ -1,4 +1,4 @@
-/*! browser-peers v0.1.0 | Copyright (c) 2020-2022 Steve Kieffer | MIT license */
+/*! browser-peers v0.2.1 | Copyright (c) 2020-2023 Steve Kieffer | MIT license */
 /* SPDX-License-Identifier: MIT */
 
 import {PsCsPeer} from "./pscspeer";
