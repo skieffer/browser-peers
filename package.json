@@ -1,6 +1,6 @@
 {
   "name": "browser-peers",
-  "version": "0.3.0",
+  "version": "0.3.1-dev",
   "license": "MIT",
   "description": "Promise-based requests and responses across various boundaries in web programming.",
   "repository": {
