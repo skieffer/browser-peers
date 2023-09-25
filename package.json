@@ -1,6 +1,6 @@
 {
   "name": "browser-peers",
-  "version": "0.2.1-dev",
+  "version": "0.3.0",
   "license": "MIT",
   "description": "Promise-based requests and responses across various boundaries in web programming.",
   "repository": {
@@ -9,6 +9,6 @@
   },
   "author": "Steve Kieffer (https://skieffer.info)",
   "dependencies": {
-    "webextension-polyfill": "^0.6.0"
+    "webextension-polyfill": "^0.10.0"
   }
 }
